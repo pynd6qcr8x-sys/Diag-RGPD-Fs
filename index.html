@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnostic RGPD Express - Cabinet d'Expertise Comptable</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 30px 16px;
+    color: #1f2937;
+  }
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.2);
+    overflow: hidden;
+  }
+  header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    padding: 40px 40px 32px;
+    text-align: center;
+    position: relative;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  header h1 { font-size: 30px; font-weight: 700; margin-bottom: 10px; }
+  header p { font-size: 15px; opacity: 0.95; max-width: 600px; margin: 0 auto; }
+  .duration-bar {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 18px;
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+  .duration-bar span { opacity: 0.9; }
+  .duration-bar strong { color: #fef3c7; }
+
+  .form-section {
+    padding: 28px 40px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafbff;
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .form-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .form-field input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+  }
+  .form-field input:focus { outline: none; border-color: #667eea; }
+
+  main { padding: 32px 40px; }
+  .intro {
+    background: #f0f4ff;
+    border-left: 4px solid #667eea;
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    color: #4338ca;
+  }
+
+  .question {
+    padding: 20px 0;
+    border-bottom: 1px solid #f3f4f6;
+    display: grid;
+    grid-template-columns: 50px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .question:last-child { border-bottom: none; }
+  .q-number {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .q-content { flex: 1; }
+  .q-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+  }
+  .q-help {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 12px;
+  }
+  .q-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .q-options button {
+    padding: 10px 8px;
+    border: 1.5px solid #e5e7eb;
+    background: #ffffff;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: #6b7280;
+    line-height: 1.3;
+    text-align: center;
+  }
+  .q-options button .opt-title { display: block; font-size: 12.5px; }
+  .q-options button .opt-sub { display: block; font-size: 10px; opacity: 0.85; margin-top: 2px; font-weight: 500; }
+  .q-options button:hover { border-color: #9ca3af; background: #f9fafb; }
+  .q-options button.selected.no { background: #ef4444; border-color: #ef4444; color: #ffffff; }
+  .q-options button.selected.informal { background: #f59e0b; border-color: #f59e0b; color: #ffffff; }
+  .q-options button.selected.formal { background: #3b82f6; border-color: #3b82f6; color: #ffffff; }
+  .q-options button.selected.controlled { background: #10b981; border-color: #10b981; color: #ffffff; }
+  @media (max-width: 600px) {
+    .q-options { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .submit-zone {
+    padding: 28px 40px;
+    background: #fafbff;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+  }
+  .progress-mini {
+    margin-bottom: 18px;
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
+  }
+  .progress-mini strong { color: #667eea; font-size: 18px; }
+  .btn-submit {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
+    border: none;
+    padding: 14px 36px;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(102, 126, 234, 0.5); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* === RAPPORT === */
+  .report { display: none; padding: 36px 40px; }
+  .report.active { display: block; }
+  .report-meta {
+    text-align: center;
+    margin-bottom: 28px;
+    color: #6b7280;
+    font-size: 14px;
+  }
+  .report-meta h2 {
+    color: #1f2937;
+    font-size: 26px;
+    margin-bottom: 8px;
+  }
+
+  .score-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 36px;
+    color: #ffffff;
+    text-align: center;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .score-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -10%;
+    width: 300px; height: 300px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+  .score-circle-wrap {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 16px;
+  }
+  .score-num {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 52px;
+    font-weight: 800;
+  }
+  .score-num small { font-size: 20px; font-weight: 500; opacity: 0.85; }
+  .score-label {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.85;
+    margin-bottom: 6px;
+  }
+  .score-status-text { font-size: 22px; font-weight: 700; }
+
+  .breakdown {
+    background: #fafbff;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .breakdown h3 {
+    font-size: 16px;
+    color: #4338ca;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .breakdown-item {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 14px 10px;
+    text-align: center;
+    border: 1px solid #e5e7eb;
+  }
+  .breakdown-num {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .breakdown-num.controlled { color: #10b981; }
+  .breakdown-num.formal { color: #3b82f6; }
+  .breakdown-num.informal { color: #f59e0b; }
+  .breakdown-num.no { color: #ef4444; }
+  @media (max-width: 600px) {
+    .breakdown-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .breakdown-label {
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  .section-h {
+    font-size: 18px;
+    color: #1f2937;
+    margin: 28px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e5e7eb;
+    font-weight: 700;
+  }
+
+  .actions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .action-item {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 12px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px 16px;
+    align-items: start;
+  }
+  .action-item.urgent { border-left: 4px solid #ef4444; background: #fef9f9; }
+  .action-item.important { border-left: 4px solid #f59e0b; background: #fffdf7; }
+  .action-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #ffffff; font-weight: 700; font-size: 14px;
+  }
+  .urgent .action-icon { background: #ef4444; }
+  .important .action-icon { background: #f59e0b; }
+  .action-body { font-size: 14px; color: #1f2937; }
+  .action-tag {
+    display: inline-block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+  .urgent .action-tag { background: #fee2e2; color: #991b1b; }
+  .important .action-tag { background: #fef3c7; color: #92400e; }
+
+  .cta-box {
+    background: linear-gradient(135deg, #f0f4ff 0%, #fef3ff 100%);
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-top: 24px;
+    text-align: center;
+    border: 1px dashed #a5b4fc;
+  }
+  .cta-box h4 {
+    color: #4338ca;
+    font-size: 17px;
+    margin-bottom: 8px;
+  }
+  .cta-box p {
+    color: #4b5563;
+    font-size: 14px;
+    margin-bottom: 14px;
+  }
+
+  .report-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn {
+    padding: 11px 22px;
+    border-radius: 10px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary { background: #667eea; color: #ffffff; }
+  .btn-primary:hover { background: #5568d3; }
+  .btn-outline { background: #ffffff; color: #667eea; border: 1.5px solid #667eea; }
+  .btn-ghost { background: transparent; color: #6b7280; }
+
+  @media print {
+    body { background: #ffffff; padding: 0; }
+    .container { box-shadow: none; border-radius: 0; }
+    .form-section, main, .submit-zone, .report-actions { display: none !important; }
+    .report { display: block !important; padding: 20px; }
+    .score-hero { background: #667eea !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .action-item { page-break-inside: avoid; }
+  }
+  @media (max-width: 720px) {
+    header, main, .report, .form-section, .submit-zone { padding-left: 22px; padding-right: 22px; }
+    .form-row { grid-template-columns: 1fr; }
+    .breakdown-grid { grid-template-columns: 1fr; }
+    .question { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <span class="badge">Diagnostic Express</span>
+    <h1>Êtes-vous en règle avec le RGPD ?</h1>
+    <p>15 questions clés pour évaluer rapidement la conformité de votre cabinet d'expertise comptable</p>
+    <div class="duration-bar">
+      <span>⏱ <strong>5 minutes</strong></span>
+      <span>📋 <strong>15 questions</strong></span>
+      <span>📊 <strong>Résultat immédiat</strong></span>
+    </div>
+  </header>
+
+  <div class="form-section" id="form-section">
+    <div class="form-row">
+      <div class="form-field">
+        <label>Cabinet</label>
+        <input type="text" id="f-cabinet" placeholder="Nom du cabinet">
+      </div>
+      <div class="form-field">
+        <label>Responsable</label>
+        <input type="text" id="f-responsable" placeholder="Nom du responsable">
+      </div>
+      <div class="form-field">
+        <label>Date</label>
+        <input type="date" id="f-date">
+      </div>
+    </div>
+  </div>
+
+  <main id="questionnaire">
+    <div class="intro">
+      Pour chaque question, sélectionnez la réponse qui reflète l'existence de <strong>preuves objectives</strong> au sein du cabinet : un dispositif n'est réellement « conforme » que s'il est <strong>documenté, contrôlé et révisé périodiquement</strong>.
+      <br><br>
+      <strong>Non</strong> : la mesure n'est pas en place — <strong>Oui informel</strong> : pratique existante mais sans document ni procédure formalisée — <strong>Oui formalisé</strong> : document/procédure écrite et appliquée — <strong>Oui contrôlé</strong> : document + contrôle régulier et révision périodique.
+    </div>
+    <div id="questions-list"></div>
+  </main>
+
+  <div class="submit-zone" id="submit-zone">
+    <div class="progress-mini">
+      <strong id="progress-count">0</strong> / 15 questions répondues
+    </div>
+    <button class="btn-submit" id="submit-btn" onclick="generateReport()" disabled>Voir mon diagnostic</button>
+  </div>
+
+  <div class="report" id="report">
+    <div class="report-meta">
+      <h2>Votre diagnostic RGPD</h2>
+      <div id="meta-line"></div>
+    </div>
+
+    <div class="score-hero">
+      <div class="score-label">Score de conformité</div>
+      <div class="score-circle-wrap">
+        <canvas id="scoreChart" width="180" height="180"></canvas>
+        <div class="score-num"><span id="score-value">0</span><small>%</small></div>
+      </div>
+      <div class="score-status-text" id="score-status-text">--</div>
+    </div>
+
+    <div class="breakdown">
+      <h3>Répartition de vos réponses</h3>
+      <div class="breakdown-grid">
+        <div class="breakdown-item">
+          <div class="breakdown-num controlled" id="count-controlled">0</div>
+          <div class="breakdown-label">Contrôlés</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num formal" id="count-formal">0</div>
+          <div class="breakdown-label">Formalisés</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num informal" id="count-informal">0</div>
+          <div class="breakdown-label">Informels</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-num no" id="count-no">0</div>
+          <div class="breakdown-label">Absents</div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="section-h">Vos priorités</h3>
+    <div class="actions-list" id="actions-list"></div>
+
+    <div class="cta-box" id="cta-box">
+      <h4 id="cta-title">Aller plus loin</h4>
+      <p id="cta-text">Pour un audit approfondi, complétez le diagnostic complet (64 points de contrôle) ou faites-vous accompagner par un DPO externe.</p>
+    </div>
+
+    <div class="report-actions">
+      <button class="btn btn-primary" onclick="window.print()">🖨 Imprimer / PDF</button>
+      <button class="btn btn-outline" onclick="returnToForm()">← Modifier les réponses</button>
+      <button class="btn btn-ghost" onclick="resetAll()">Recommencer</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ======================================================================
+// 15 QUESTIONS CLÉS — sélection des points de contrôle les plus critiques
+// pour un cabinet d'expertise comptable
+// ======================================================================
+const QUESTIONS = [
+  { q: "Avez-vous désigné un DPO ou un référent RGPD interne ?",
+    help: "Un point de contact identifié, formé et reconnu pour piloter la conformité.",
+    weight: 1, theme: "Gouvernance" },
+  { q: "Tenez-vous un registre des activités de traitement à jour ?",
+    help: "Document obligatoire (article 30 RGPD) listant tous les traitements de données.",
+    weight: 1.5, theme: "Documentation" },
+  { q: "Une mention d'information conforme est-elle remise aux clients et salariés ?",
+    help: "Information transparente sur l'identité du responsable, finalités, durées, droits.",
+    weight: 1.5, theme: "Droits des personnes" },
+  { q: "Une procédure existe-t-elle pour traiter les demandes des personnes (accès, rectification, effacement) ?",
+    help: "Processus documenté pour répondre dans le délai d'un mois.",
+    weight: 1.5, theme: "Droits des personnes" },
+  { q: "Une politique de mots de passe robuste et l'authentification multi-facteurs sont-elles en place ?",
+    help: "MFA sur la messagerie, les logiciels métier et les espaces cloud.",
+    weight: 2, theme: "Sécurité" },
+  { q: "Les données sensibles sont-elles chiffrées (au repos et en transit) ?",
+    help: "HTTPS, chiffrement disque, VPN pour le télétravail.",
+    weight: 1.5, theme: "Sécurité" },
+  { q: "Réalisez-vous des sauvegardes régulières et testées ?",
+    help: "Sauvegardes externalisées avec tests de restauration périodiques.",
+    weight: 1.5, theme: "Sécurité" },
+  { q: "Les accès aux données sont-ils gérés par habilitations (principe du moindre privilège) ?",
+    help: "Chaque collaborateur n'accède qu'aux dossiers nécessaires à sa mission.",
+    weight: 1.5, theme: "Sécurité" },
+  { q: "Avez-vous signé des contrats de sous-traitance conformes à l'article 28 RGPD avec vos prestataires ?",
+    help: "Logiciel comptable, paie, hébergeur, GED, prestataire IT.",
+    weight: 1.5, theme: "Sous-traitance" },
+  { q: "Privilégiez-vous des hébergeurs et logiciels basés en Union Européenne ?",
+    help: "Réduction du risque juridique lié aux transferts hors UE.",
+    weight: 1, theme: "Sous-traitance" },
+  { q: "Une procédure de gestion des violations de données est-elle formalisée (notification CNIL sous 72h) ?",
+    help: "Détection, qualification, notification et information des personnes concernées.",
+    weight: 1.5, theme: "Violations" },
+  { q: "Les collaborateurs sont-ils formés et sensibilisés régulièrement à la protection des données ?",
+    help: "Formation à l'arrivée, rappels annuels, sensibilisation au phishing.",
+    weight: 1, theme: "Formation" },
+  { q: "Les fiches de paie et bulletins sont-ils transmis via un canal sécurisé (coffre-fort, portail) ?",
+    help: "Pas d'envoi par e-mail non chiffré.",
+    weight: 1.5, theme: "Métier" },
+  { q: "Les échanges de documents avec vos clients passent-ils par un portail sécurisé ?",
+    help: "GED, espace client chiffré plutôt qu'e-mail standard.",
+    weight: 1, theme: "Métier" },
+  { q: "Les durées de conservation respectent-elles à la fois les obligations RGPD et la loi comptable ?",
+    help: "10 ans pour les pièces comptables, 5 ans pour la paie, archivage purgé en fin de cycle.",
+    weight: 1, theme: "Documentation" }
+];
+
+const TOTAL_QUESTIONS = QUESTIONS.length;
+let answers = {}; // index -> "yes"|"partial"|"no"
+
+// ======================================================================
+// RENDU
+// ======================================================================
+const ANSWER_LEVELS = [
+  { val: 'no',         title: 'Non',           sub: 'Pas en place' },
+  { val: 'informal',   title: 'Oui informel',  sub: 'Sans document' },
+  { val: 'formal',     title: 'Oui formalisé', sub: 'Document écrit' },
+  { val: 'controlled', title: 'Oui contrôlé',  sub: 'Document + contrôle' }
+];
+
+function renderQuestions() {
+  const list = document.getElementById('questions-list');
+  list.innerHTML = QUESTIONS.map((item, i) => `
+    <div class="question" data-i="${i}">
+      <div class="q-number">${i + 1}</div>
+      <div class="q-content">
+        <div class="q-text">${item.q}</div>
+        <div class="q-help">${item.help}</div>
+        <div class="q-options">
+          ${ANSWER_LEVELS.map(lvl => `
+            <button class="${answers[i]===lvl.val ? 'selected ' + lvl.val : ''}" data-val="${lvl.val}" onclick="setAnswer(${i},'${lvl.val}')">
+              <span class="opt-title">${lvl.title}</span>
+              <span class="opt-sub">${lvl.sub}</span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setAnswer(i, val) {
+  answers[i] = val;
+  saveState();
+  // mise à jour ciblée
+  const block = document.querySelector(`.question[data-i="${i}"]`);
+  if (block) {
+    block.querySelectorAll('.q-options button').forEach(b => {
+      b.classList.remove('selected', 'no', 'informal', 'formal', 'controlled');
+      if (b.dataset.val === val) b.classList.add('selected', val);
+    });
+  }
+  updateProgress();
+}
+
+function updateProgress() {
+  const count = Object.keys(answers).length;
+  document.getElementById('progress-count').textContent = count;
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = count < TOTAL_QUESTIONS;
+  btn.textContent = count < TOTAL_QUESTIONS
+    ? `Encore ${TOTAL_QUESTIONS - count} question(s)`
+    : 'Voir mon diagnostic →';
+}
+
+// ======================================================================
+// PERSISTANCE
+// ======================================================================
+function saveState() {
+  try {
+    localStorage.setItem('rgpd_express_answers', JSON.stringify(answers));
+    localStorage.setItem('rgpd_express_meta', JSON.stringify({
+      cabinet: document.getElementById('f-cabinet').value,
+      responsable: document.getElementById('f-responsable').value,
+      date: document.getElementById('f-date').value
+    }));
+  } catch(e){}
+}
+function loadState() {
+  try {
+    const a = localStorage.getItem('rgpd_express_answers');
+    if (a) {
+      const parsed = JSON.parse(a);
+      const validValues = ['no', 'informal', 'formal', 'controlled'];
+      // Filtre les réponses obsolètes d'une version antérieure
+      Object.keys(parsed).forEach(k => {
+        if (validValues.includes(parsed[k])) answers[k] = parsed[k];
+      });
+    }
+    const m = localStorage.getItem('rgpd_express_meta');
+    if (m) {
+      const meta = JSON.parse(m);
+      if (meta.cabinet) document.getElementById('f-cabinet').value = meta.cabinet;
+      if (meta.responsable) document.getElementById('f-responsable').value = meta.responsable;
+      if (meta.date) document.getElementById('f-date').value = meta.date;
+    }
+  } catch(e){}
+}
+
+// ======================================================================
+// SCORING & RAPPORT
+// ======================================================================
+// Scoring objectif basé sur l'existence de preuves :
+// - Non                : 0%   — la mesure n'est pas en place
+// - Oui informel       : 33%  — pratique sans formalisation, non opposable
+// - Oui formalisé      : 75%  — document écrit, mais sans contrôle continu
+// - Oui contrôlé       : 100% — document + contrôle régulier (état de l'art)
+const POINTS = { no: 0, informal: 0.33, formal: 0.75, controlled: 1 };
+
+function computeScore() {
+  let total = 0, max = 0;
+  let counts = { no: 0, informal: 0, formal: 0, controlled: 0 };
+  QUESTIONS.forEach((item, i) => {
+    const a = answers[i];
+    if (!a) return;
+    counts[a]++;
+    total += POINTS[a] * item.weight;
+    max += item.weight;
+  });
+  const score = max === 0 ? 0 : Math.round((total / max) * 100);
+  return { score, counts };
+}
+
+function generateReport() {
+  if (Object.keys(answers).length < TOTAL_QUESTIONS) return;
+  document.getElementById('form-section').style.display = 'none';
+  document.getElementById('questionnaire').style.display = 'none';
+  document.getElementById('submit-zone').style.display = 'none';
+  document.getElementById('report').classList.add('active');
+  const { score, counts } = computeScore();
+  renderReport(score, counts);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function returnToForm() {
+  document.getElementById('form-section').style.display = 'block';
+  document.getElementById('questionnaire').style.display = 'block';
+  document.getElementById('submit-zone').style.display = 'block';
+  document.getElementById('report').classList.remove('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderReport(score, counts) {
+  // métadonnées
+  const cabinet = document.getElementById('f-cabinet').value || 'Cabinet';
+  const responsable = document.getElementById('f-responsable').value || '';
+  const dateInput = document.getElementById('f-date').value;
+  const date = dateInput ? new Date(dateInput).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
+  document.getElementById('meta-line').textContent = `${cabinet}${responsable ? ' • ' + responsable : ''} • ${date}`;
+
+  // score
+  document.getElementById('score-value').textContent = score;
+  renderScoreChart(score);
+  setStatusText(score);
+
+  // répartition
+  document.getElementById('count-controlled').textContent = counts.controlled;
+  document.getElementById('count-formal').textContent = counts.formal;
+  document.getElementById('count-informal').textContent = counts.informal;
+  document.getElementById('count-no').textContent = counts.no;
+
+  // priorités (issues des Non, puis Partiels)
+  renderPriorities();
+
+  // CTA selon score
+  setCTA(score);
+}
+
+function renderScoreChart(score) {
+  const ctx = document.getElementById('scoreChart').getContext('2d');
+  if (window._scoreChart) window._scoreChart.destroy();
+  window._scoreChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [score, 100 - score],
+        backgroundColor: ['#ffffff', 'rgba(255,255,255,0.25)'],
+        borderWidth: 0,
+        cutout: '78%'
+      }]
+    },
+    options: {
+      responsive: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      animation: { animateRotate: true, duration: 1200 }
+    }
+  });
+}
+
+function setStatusText(score) {
+  const el = document.getElementById('score-status-text');
+  if (score >= 85) el.textContent = "✓ Conformité maîtrisée et documentée";
+  else if (score >= 65) el.textContent = "⚠ Conformité formalisée mais à contrôler";
+  else if (score >= 40) el.textContent = "⚠ Conformité partielle, preuves manquantes";
+  else el.textContent = "✗ Non-conformité — risque élevé";
+}
+
+function renderPriorities() {
+  const list = document.getElementById('actions-list');
+  const items = [];
+  QUESTIONS.forEach((item, i) => {
+    const a = answers[i];
+    if (a === 'no') {
+      // Absence totale — urgent si fort poids, sinon important
+      items.push({
+        priority: item.weight >= 1.5 ? 'urgent' : 'important',
+        text: "Mettre en place : " + cleanQuestion(item.q),
+        theme: item.theme,
+        sortKey: 0
+      });
+    } else if (a === 'informal') {
+      // Pratique non formalisée — important (preuve manquante)
+      items.push({
+        priority: item.weight >= 1.5 ? 'urgent' : 'important',
+        text: "Formaliser par écrit (procédure / document) : " + cleanQuestion(item.q),
+        theme: item.theme,
+        sortKey: 1
+      });
+    } else if (a === 'formal') {
+      // Formalisé mais sans contrôle — à planifier
+      items.push({
+        priority: 'important',
+        text: "Mettre en place un contrôle périodique et une révision : " + cleanQuestion(item.q),
+        theme: item.theme,
+        sortKey: 2
+      });
+    }
+    // 'controlled' = aucune action requise
+  });
+  // tri : urgent d'abord, puis par sortKey croissant
+  items.sort((a, b) => {
+    const order = { urgent: 0, important: 1 };
+    if (order[a.priority] !== order[b.priority]) return order[a.priority] - order[b.priority];
+    return a.sortKey - b.sortKey;
+  });
+  if (items.length === 0) {
+    list.innerHTML = `
+      <div class="action-item" style="border-left:4px solid #10b981;background:#ecfdf5;">
+        <div class="action-icon" style="background:#10b981;">✓</div>
+        <div class="action-body">Excellent ! Toutes les mesures sont en place, formalisées et contrôlées. Maintenez ce niveau par une revue annuelle.</div>
+      </div>`;
+    return;
+  }
+  list.innerHTML = items.map((a, idx) => `
+    <div class="action-item ${a.priority}">
+      <div class="action-icon">${idx + 1}</div>
+      <div class="action-body">
+        <span class="action-tag">${a.priority === 'urgent' ? 'Urgent' : 'Important'} • ${a.theme}</span>
+        <div>${a.text}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function cleanQuestion(q) {
+  return q.replace(/^[A-Z]/, c => c.toLowerCase()).replace(/\s*\?\s*$/, '');
+}
+
+function setCTA(score) {
+  const title = document.getElementById('cta-title');
+  const text = document.getElementById('cta-text');
+  if (score >= 85) {
+    title.textContent = "Maintenez l'excellence";
+    text.textContent = "Votre conformité est non seulement formalisée mais également contrôlée. Planifiez une revue annuelle et un audit externe tous les 2 ans pour pérenniser cet acquis.";
+  } else if (score >= 65) {
+    title.textContent = "Mettez en place les contrôles";
+    text.textContent = "Les mesures sont documentées mais peu de contrôles périodiques sont en place. Définissez un plan de revue annuel pour passer du formalisé au contrôlé et complétez par le diagnostic approfondi (64 points).";
+  } else if (score >= 40) {
+    title.textContent = "Formalisez vos pratiques";
+    text.textContent = "Plusieurs mesures existent en pratique mais ne sont pas documentées : en cas de contrôle CNIL, vous ne pourrez pas le prouver. Engagez la rédaction des procédures manquantes et appuyez-vous sur un DPO externe si besoin.";
+  } else {
+    title.textContent = "Mise en conformité urgente";
+    text.textContent = "Le niveau de preuves objectives est très faible : risque de sanction CNIL et de perte de confiance clients. Faites-vous accompagner sans tarder par un professionnel RGPD.";
+  }
+}
+
+// ======================================================================
+// RESET
+// ======================================================================
+function resetAll() {
+  if (!confirm("Effacer toutes les réponses et recommencer ?")) return;
+  answers = {};
+  try {
+    localStorage.removeItem('rgpd_express_answers');
+    localStorage.removeItem('rgpd_express_meta');
+  } catch(e){}
+  document.getElementById('f-cabinet').value = '';
+  document.getElementById('f-responsable').value = '';
+  document.getElementById('f-date').valueAsDate = new Date();
+  returnToForm();
+  renderQuestions();
+  updateProgress();
+}
+
+// ======================================================================
+// INIT
+// ======================================================================
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('f-date').valueAsDate = new Date();
+  loadState();
+  ['f-cabinet', 'f-responsable', 'f-date'].forEach(id => {
+    document.getElementById(id).addEventListener('input', saveState);
+  });
+  renderQuestions();
+  updateProgress();
+});
+</script>
+</body>
+</html>
