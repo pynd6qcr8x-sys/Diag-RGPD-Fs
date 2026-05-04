@@ -383,6 +383,52 @@
     .breakdown-grid { grid-template-columns: 1fr; }
     .question { grid-template-columns: 1fr; }
   }
+  .no-answers-section {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+.no-answers-section h3 {
+  font-size: 15px;
+  color: #991b1b;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.no-answers-list { display: grid; gap: 8px; }
+.no-answer-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  background: #ffffff;
+  border-radius: 8px;
+  border-left: 3px solid #ef4444;
+  font-size: 14px;
+}
+.no-answer-num {
+  background: #ef4444;
+  color: #ffffff;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.no-answer-empty {
+  padding: 12px;
+  color: #065f46;
+  background: #ecfdf5;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+}
 </style>
 </head>
 <body>
@@ -469,6 +515,10 @@
       </div>
     </div>
 
+    <section class="no-answers-section">
+  <h3>Points déclarés « Non »</h3>
+  <div class="no-answers-list" id="no-answers-list"></div>
+</section>
     <h3 class="section-h">Vos priorités</h3>
     <div class="actions-list" id="actions-list"></div>
 
@@ -551,6 +601,27 @@ const ANSWER_LEVELS = [
   { val: 'formal',     title: 'Oui formalisé', sub: 'Document écrit' },
   { val: 'controlled', title: 'Oui contrôlé',  sub: 'Document + contrôle' }
 ];
+function renderNoAnswers() {
+  const list = document.getElementById('no-answers-list');
+  if (!list) return;
+  const items = [];
+  QUESTIONS.forEach((item, i) => {
+    if (answers[i] === 'no') {
+      const label = item.short || item.q;
+      items.push({ index: i + 1, label });
+    }
+  });
+  if (items.length === 0) {
+    list.innerHTML = `<div class="no-answer-empty">Aucun point n'a été déclaré « Non » — toutes les mesures sont au moins en place sous forme informelle.</div>`;
+    return;
+  }
+  list.innerHTML = items.map(it => `
+    <div class="no-answer-item">
+      <span class="no-answer-num">${it.index}</span>
+      <span>${it.label}</span>
+    </div>
+  `).join('');
+}
 
 function renderQuestions() {
   const list = document.getElementById('questions-list');
@@ -694,6 +765,7 @@ function renderReport(score, counts) {
   document.getElementById('count-no').textContent = counts.no;
 
   // priorités (issues des Non, puis Partiels)
+  renderNoAnswers();
   renderPriorities();
 
   // CTA selon score
